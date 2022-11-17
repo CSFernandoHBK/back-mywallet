@@ -5,7 +5,8 @@ import dotenv from "dotenv";
 import { MongoClient } from "mongodb";
 
 const app = express();
-const mongoClient = new MongoClient("mongodb://localhost:27017");
+dotenv.config();
+const mongoClient = new MongoClient(process.env.MONGO_URI);
 app.use(cors());
 app.use(express.json());
 let db;
