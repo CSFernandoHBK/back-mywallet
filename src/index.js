@@ -41,9 +41,21 @@ app.post("/register", async (req, res) => {
         return res.status(400).send(errors);
     }
 
-    //const passwordHash = bcrypt.hashSync(user.senha, 10);
-    //await db.collection("users").insertOne(user);
-    //res.sendStatus(201);
+    const passwordHash = bcrypt.hashSync(user.password, 10);
+
+    try{
+        const userExists = await userCollection.findOne({email: user.email});
+        if(userExists){
+            return res.sendStatus(409);
+        }
+        await userCollection.insertOne({...user, password: passwordHash});
+        res.sendStatus(201);
+    } catch (err) {
+        console.log(err);
+        res.sendStatus(500);
+    }
+
+    res.send()
 })
 
 app.post("/login", async (req, res) => {})
