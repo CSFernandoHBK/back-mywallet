@@ -58,7 +58,27 @@ app.post("/register", async (req, res) => {
     res.send()
 })
 
-app.post("/login", async (req, res) => {})
+app.post("/login", async (req, res) => {
+    const {email, password} = req.body;
+
+    try{
+        const userExists = await userCollection.findOne({email});
+        if(!userExists){
+            return res.sendStatus(401)
+        }
+        const isPasswordOk = bcrypt.compareSync(password, userExists.password);
+        
+        if(!isPasswordOk){
+            return res.sendStatus(401);
+        }
+
+        return res.sendStatus(200);
+
+    } catch(err){
+        console.log(err);
+        res.sendStatus(500)
+    }
+})
 
 app.get("/home", async (req, res) => {})
 
