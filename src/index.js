@@ -3,6 +3,8 @@ import cors from "cors";
 import joi from "joi";
 import dotenv from "dotenv";
 import bcrypt from "bcrypt";
+import { v4 as uuidV4} from "uuid";
+
 import { MongoClient } from "mongodb";
 
 const app = express();
@@ -21,6 +23,7 @@ try{
 
 const db = mongoClient.db("mywallet");
 const userCollection = db.collection("users");
+const sessionCollection = db.collection("sessions");
 
 const userRegisterSchema = joi.object({
     name: joi.string().required().min(3).max(100),
@@ -60,11 +63,13 @@ app.post("/register", async (req, res) => {
 
 app.post("/login", async (req, res) => {
     const {email, password} = req.body;
+    const token = uuidV4();
 
     try{
         const userExists = await userCollection.findOne({email});
+        console.log(userExists._id);
         if(!userExists){
-            return res.sendStatus(401)
+            return res.sendStatus(401);
         }
         const isPasswordOk = bcrypt.compareSync(password, userExists.password);
         
@@ -72,7 +77,9 @@ app.post("/login", async (req, res) => {
             return res.sendStatus(401);
         }
 
-        return res.sendStatus(200);
+        await sessionCollection.insertOne({"token": token, "userId": userExists._id})
+
+        return res.send({token});
 
     } catch(err){
         console.log(err);
@@ -80,11 +87,35 @@ app.post("/login", async (req, res) => {
     }
 })
 
-app.get("/home", async (req, res) => {})
+app.get("/home", async (req, res) => {
+    const {authorization} = req.headers;
 
-app.post("/novaentrada", async (req, res) => {})
+    if(!authorization){
+        return res.sendStatus(401);
+    }
 
-app.post("/novasaida", async (req, res) => {})
+    try{
+        const token = authorization?.replace("Bearer ", "")
+        if(!token || token === "Bearer"){
+            return res.sendStatus(401);
+        }
+        const session = await sessionCollection.findOne({token});
+        if(!session){
+            return res.sendStatus(401);
+        }        
+        const user = await userCollection.findOne({_id: session?.userId});
+        if(!user){
+            return res.sendStatus(401);
+        }
+        delete user.password;
+        return res.send(user);
+    } catch(err) {
+        console.log(err);
+        res.sendStatus(500);
+    }
+})
+
+app.post("/newmovement", async (req, res) => {})
 
 
 app.listen(5000, () => console.log("Server runnig in port: 5000"));
