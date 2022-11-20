@@ -24,6 +24,7 @@ try{
 const db = mongoClient.db("mywallet");
 const userCollection = db.collection("users");
 const sessionCollection = db.collection("sessions");
+const movementCollection = db.collection("movements");
 
 const userRegisterSchema = joi.object({
     name: joi.string().required().min(3).max(100),
@@ -34,6 +35,14 @@ const userRegisterSchema = joi.object({
 const userLoginSchema = joi.object({
     email: joi.string().email().required(),
     password: joi.string().required()
+})
+
+const movementSchema = joi.object({
+    idUser: joi.string().required(),
+    date: joi.string().required(),
+    description: joi.string().required(),
+    value: joi.number().required(),
+    type: joi.string().required()
 })
 
 app.post("/register", async (req, res) => {
@@ -108,6 +117,8 @@ app.get("/home", async (req, res) => {
             return res.sendStatus(401);
         }
         delete user.password;
+        // aqui, antes de devolver o objeto, posso alterar para 
+        // a primeira letra do nome ser maiuscula
         return res.send(user);
     } catch(err) {
         console.log(err);
@@ -115,7 +126,54 @@ app.get("/home", async (req, res) => {
     }
 })
 
-app.post("/newmovement", async (req, res) => {})
+app.post("/newmovement", async (req, res) => {
+    const movement = req.body;
+    const {authorization} = req.headers;
 
+    if(!authorization){
+        return res.sendStatus(401);
+    }
+
+    const {error} = movementSchema.validate(movement, {abortEarly: false});
+    if (error){
+        const errors = error.details.map((detail) => detail.message);
+        return res.status(400).send(errors);
+    }
+
+    try{
+        const token = authorization?.replace("Bearer ", "")
+        if(!token || token === "Bearer"){
+            return res.sendStatus(401);
+        }
+        const session = await sessionCollection.findOne({token});
+        if(!session){
+            return res.sendStatus(401);
+        }        
+        const user = await userCollection.findOne({_id: session?.userId});
+        if(!user){
+            return res.sendStatus(401);
+        }
+        await movementCollection.insertOne(movement);
+        res.sendStatus(201);
+    } catch(err){
+        console.log(err);
+        return res.sendStatus(500);
+    }
+})
+
+app.get("/movements", async (req, res) => {
+    const {authorization} = req.headers;
+
+    if(!authorization){
+        return res.sendStatus(401);
+    }
+
+    try{
+        
+    } catch(err){
+        console.log(err);
+        return res.sendStatus(500);
+    }
+})
 
 app.listen(5000, () => console.log("Server runnig in port: 5000"));
