@@ -38,7 +38,6 @@ const userLoginSchema = joi.object({
 })
 
 const movementSchema = joi.object({
-    idUser: joi.string().required(),
     date: joi.string().required(),
     description: joi.string().required(),
     value: joi.number().required(),
@@ -153,7 +152,9 @@ app.post("/newmovement", async (req, res) => {
         if(!user){
             return res.sendStatus(401);
         }
-        await movementCollection.insertOne(movement);
+        const idUser = String(user._id);
+
+        await movementCollection.insertOne({...movement, idUser: idUser});
         res.sendStatus(201);
     } catch(err){
         console.log(err);
@@ -184,6 +185,27 @@ app.get("/movements", async (req, res) => {
         const idUser = String(user._id);
         const movements = await movementCollection.find({idUser: idUser}).toArray();
         return res.send(movements);
+    } catch(err){
+        console.log(err);
+        return res.sendStatus(500);
+    }
+})
+
+app.delete("/logout", async (req, res) => {
+    const {authorization} = req.headers;
+    console.log(authorization);
+
+    if(!authorization){
+        return res.sendStatus(401);
+    }
+
+    try{
+        const token = authorization?.replace("Bearer ", "")
+        if(!token || token === "Bearer"){
+            return res.sendStatus(401);
+        }
+        await sessionCollection.deleteOne({token: token})
+        res.sendStatus(200).send({message: "Logout com sucesso!"})
     } catch(err){
         console.log(err);
         return res.sendStatus(500);
