@@ -212,4 +212,4 @@ app.delete("/logout", async (req, res) => {
     }
 })
 
-app.listen(5000, () => console.log("Server runnig in port: 5000"));
+app.listen(process.env.PORT, () => console.log(`Server runnig in port: ${process.env.PORT}`));
