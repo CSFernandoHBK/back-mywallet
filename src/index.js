@@ -65,8 +65,6 @@ app.post("/register", async (req, res) => {
         console.log(err);
         res.sendStatus(500);
     }
-
-    res.send()
 })
 
 app.post("/login", async (req, res) => {
@@ -212,4 +210,4 @@ app.delete("/logout", async (req, res) => {
     }
 })
 
-app.listen(process.env.PORT, () => console.log(`Server runnig in port: ${process.env.PORT}`));
+app.listen(process.env.PORT || 5000, () => console.log(`Server runnig in port: ${process.env.PORT || 5000}`));
