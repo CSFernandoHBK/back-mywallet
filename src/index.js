@@ -163,17 +163,25 @@ app.post("/newmovement", async (req, res) => {
 
 app.get("/movements", async (req, res) => {
     const {authorization} = req.headers;
-    const {idUser} = req.body;
 
     if(!authorization){
         return res.sendStatus(401);
     }
 
-    if (!idUser){
-        return res.sendStatus(401);
-    }
-
     try{    
+        const token = authorization?.replace("Bearer ", "")
+        if(!token || token === "Bearer"){
+            return res.sendStatus(401);
+        }
+        const session = await sessionCollection.findOne({token});
+        if(!session){
+            return res.sendStatus(401);
+        }        
+        const user = await userCollection.findOne({_id: session?.userId});
+        if(!user){
+            return res.sendStatus(401);    
+        }
+        const idUser = String(user._id);
         const movements = await movementCollection.find({idUser: idUser}).toArray();
         return res.send(movements);
     } catch(err){
